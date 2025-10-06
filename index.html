@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Video & Voxel Mesh Visualization</title>
     <link rel="stylesheet" href="https://latex.vercel.app/style.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
             max-width: 95% !important;
@@ -33,23 +32,11 @@
             font-size: 1.2em;
         }
 
-        #videoPlayer {
+        video {
             width: 100%;
             max-width: 100%;
             display: block;
             background: #000;
-        }
-
-        #plyCanvas {
-            width: 100%;
-            height: 600px;
-            display: block;
-            cursor: grab;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        #plyCanvas:active {
-            cursor: grabbing;
         }
 
         .controls {
@@ -60,7 +47,7 @@
             justify-content: center;
         }
 
-        .controls button, .controls input {
+        .controls button {
             padding: 0.5rem 1rem;
             border: 1px solid #333;
             background: white;
@@ -71,18 +58,6 @@
 
         .controls button:hover {
             background: #f0f0f0;
-        }
-
-        .upload-section {
-            margin: 2rem 0;
-            padding: 1.5rem;
-            border: 2px dashed #ccc;
-            text-align: center;
-            background: #f9f9f9;
-        }
-
-        .upload-section input[type="file"] {
-            margin: 0.5rem;
         }
 
         .info-box {
@@ -97,422 +72,59 @@
                 gap: 1rem;
             }
         }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-
-        .stats {
-            margin-top: 1rem;
-            padding: 0.5rem;
-            background: #f0f0f0;
-            font-size: 0.85em;
-            text-align: center;
-            border-radius: 4px;
-        }
     </style>
 </head>
 
 <body class="latex-auto">
     <header>
         <h1>Video & Voxel Mesh Visualization</h1>
-        <p class="author">
-            Interactive 3D Visualization Tool
-        </p>
+        <p class="author">Interactive Video Player</p>
     </header>
 
     <div class="abstract">
         <h2>Abstract</h2>
         <p>
-            This tool provides an interactive side-by-side comparison of a video and its corresponding voxel mesh representation. 
-            The video player allows standard playback controls, while the voxel mesh is rendered in an interactive 3D viewer 
-            where you can rotate, zoom, and explore the mesh structure. Upload your video and PLY file to begin visualization.
+            This provides an interactive side-by-side comparison of a video and its corresponding voxel mesh representation.
         </p>
     </div>
 
     <main>
         <article>
-            <div class="upload-section">
-                <h2>Upload Files</h2>
-                <p>Select a video file and its corresponding PLY voxel mesh file to visualize:</p>
-                <div style="margin: 1rem 0;">
-                    <label><strong>Video File:</strong></label>
-                    <input type="file" id="videoInput" accept="video/*">
+            <div class="viewer-container">
+                <!-- First video -->
+                <div class="viewer-box">
+                    <h3>Original Video</h3>
+                    <video id="video1" controls>
+                        <source src="video.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="controls">
+                        <button onclick="document.getElementById('video1').play()">▶ Play</button>
+                        <button onclick="document.getElementById('video1').pause()">⏸ Pause</button>
+                        <button onclick="document.getElementById('video1').currentTime = 0">⏮ Reset</button>
+                    </div>
                 </div>
-                <div style="margin: 1rem 0;">
-                    <label><strong>PLY Mesh File:</strong></label>
-                    <input type="file" id="plyInput" accept=".ply">
+
+                <!-- Second video -->
+                <div class="viewer-box">
+                    <h3>Voxel Mesh Visualization</h3>
+                    <video id="video2" controls>
+                        <source src="open3d.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="controls">
+                        <button onclick="document.getElementById('video2').play()">▶ Play</button>
+                        <button onclick="document.getElementById('video2').pause()">⏸ Pause</button>
+                        <button onclick="document.getElementById('video2').currentTime = 0">⏮ Reset</button>
+                    </div>
                 </div>
             </div>
 
             <div class="info-box">
-                <strong>Instructions:</strong> Video appears first, followed by the 3D voxel mesh below.
-                <br><strong>3D Controls:</strong> Left-click and drag to rotate | Right-click and drag to pan | Scroll wheel to zoom in/out
-            </div>
-
-            <div class="viewer-container">
-                <div class="viewer-box">
-                    <h3>Original Video</h3>
-                    <video id="videoPlayer" controls>
-                        <source id="videoSource" src="" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="controls">
-                        <button onclick="document.getElementById('videoPlayer').play()">▶ Play</button>
-                        <button onclick="document.getElementById('videoPlayer').pause()">⏸ Pause</button>
-                        <button onclick="document.getElementById('videoPlayer').currentTime = 0">⏮ Reset</button>
-                    </div>
-                </div>
-
-                <div class="viewer-box">
-                    <h3>Voxel Mesh (3D)</h3>
-                    <canvas id="plyCanvas"></canvas>
-                    <div class="controls">
-                        <button onclick="resetCamera()">🔄 Reset View</button>
-                        <button onclick="toggleWireframe()">📐 Toggle Wireframe</button>
-                        <button onclick="toggleRotation()">🔁 Auto Rotate</button>
-                    </div>
-                    <div id="meshStats" class="stats" style="display: none;"></div>
-                </div>
-            </div>
-
-            <div id="loadingMessage" class="loading" style="display: none;">
-                Loading 3D mesh... This may take a moment for large files.
+                <strong>Instructions:</strong> Use the buttons above to control each video independently.
             </div>
         </article>
     </main>
-
-    <script>
-        let scene, camera, renderer, mesh, controls;
-        let autoRotate = false;
-        let wireframeMode = false;
-
-        // Initialize Three.js scene
-        function initScene() {
-            const canvas = document.getElementById('plyCanvas');
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x667eea);
-
-            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            camera.position.z = 5;
-
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-            renderer.setSize(width, height);
-
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 10, 10);
-            scene.add(directionalLight);
-
-            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-            directionalLight2.position.set(-10, -10, -10);
-            scene.add(directionalLight2);
-
-            // Mouse controls
-            setupMouseControls();
-
-            animate();
-        }
-
-        let isDragging = false;
-        let isRightDrag = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let rotation = { x: 0, y: 0 };
-        let panOffset = { x: 0, y: 0 };
-
-        function setupMouseControls() {
-            const canvas = document.getElementById('plyCanvas');
-
-            canvas.addEventListener('mousedown', (e) => {
-                if (e.button === 0) { // Left click
-                    isDragging = true;
-                } else if (e.button === 2) { // Right click
-                    isRightDrag = true;
-                }
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            canvas.addEventListener('mousemove', (e) => {
-                const deltaX = e.clientX - previousMousePosition.x;
-                const deltaY = e.clientY - previousMousePosition.y;
-
-                if (isDragging && mesh) {
-                    // Rotate mesh
-                    rotation.y += deltaX * 0.01;
-                    rotation.x += deltaY * 0.01;
-                    mesh.rotation.y = rotation.y;
-                    mesh.rotation.x = rotation.x;
-                } else if (isRightDrag && mesh) {
-                    // Pan camera
-                    panOffset.x += deltaX * 0.01;
-                    panOffset.y -= deltaY * 0.01;
-                    camera.position.x = panOffset.x;
-                    camera.position.y = panOffset.y;
-                }
-
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            canvas.addEventListener('mouseup', () => {
-                isDragging = false;
-                isRightDrag = false;
-            });
-
-            canvas.addEventListener('mouseleave', () => {
-                isDragging = false;
-                isRightDrag = false;
-            });
-
-            canvas.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const zoomSpeed = 0.002;
-                camera.position.z += e.deltaY * zoomSpeed;
-                camera.position.z = Math.max(0.5, Math.min(50, camera.position.z));
-            });
-
-            // Prevent context menu on right click
-            canvas.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-            });
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (autoRotate && mesh) {
-                mesh.rotation.y += 0.01;
-                rotation.y = mesh.rotation.y;
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // Parse PLY file - improved version
-        function parsePLY(text) {
-            const lines = text.split('\n');
-            let vertexCount = 0;
-            let faceCount = 0;
-            let headerEnd = 0;
-            let hasColors = false;
-
-            // Parse header
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                
-                if (line.includes('element vertex')) {
-                    vertexCount = parseInt(line.split(/\s+/)[2]);
-                }
-                if (line.includes('element face')) {
-                    faceCount = parseInt(line.split(/\s+/)[2]);
-                }
-                if (line.includes('property uchar red') || line.includes('property uchar green')) {
-                    hasColors = true;
-                }
-                if (line.includes('end_header')) {
-                    headerEnd = i + 1;
-                    break;
-                }
-            }
-
-            console.log(`Parsing PLY: ${vertexCount} vertices, ${faceCount} faces, colors: ${hasColors}`);
-
-            const vertices = [];
-            const colors = [];
-            const faces = [];
-
-            // Parse vertices
-            let parsedVertices = 0;
-            for (let i = headerEnd; i < lines.length && parsedVertices < vertexCount; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                const parts = line.split(/\s+/);
-                if (parts.length >= 3) {
-                    vertices.push(
-                        parseFloat(parts[0]), 
-                        parseFloat(parts[1]), 
-                        parseFloat(parts[2])
-                    );
-                    
-                    // Parse colors (RGB values as 0-255)
-                    if (hasColors && parts.length >= 6) {
-                        colors.push(
-                            parseInt(parts[3]) / 255, 
-                            parseInt(parts[4]) / 255, 
-                            parseInt(parts[5]) / 255
-                        );
-                    } else {
-                        colors.push(0.7, 0.7, 0.7); // Default gray
-                    }
-                    parsedVertices++;
-                }
-            }
-
-            // Parse faces
-            let parsedFaces = 0;
-            const faceStartLine = headerEnd + vertexCount;
-            
-            for (let i = faceStartLine; i < lines.length && parsedFaces < faceCount; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                const parts = line.split(/\s+/);
-                if (parts.length >= 4) {
-                    const numVertices = parseInt(parts[0]);
-                    
-                    if (numVertices === 3 && parts.length >= 4) {
-                        // Triangle face
-                        faces.push(
-                            parseInt(parts[1]), 
-                            parseInt(parts[2]), 
-                            parseInt(parts[3])
-                        );
-                        parsedFaces++;
-                    } else if (numVertices === 4 && parts.length >= 5) {
-                        // Quad face - split into two triangles
-                        const v0 = parseInt(parts[1]);
-                        const v1 = parseInt(parts[2]);
-                        const v2 = parseInt(parts[3]);
-                        const v3 = parseInt(parts[4]);
-                        
-                        faces.push(v0, v1, v2);
-                        faces.push(v0, v2, v3);
-                        parsedFaces++;
-                    }
-                }
-            }
-
-            console.log(`Parsed: ${parsedVertices} vertices, ${parsedFaces} faces`);
-            
-            return { vertices, colors, faces };
-        }
-
-        function loadPLY(file) {
-            document.getElementById('loadingMessage').style.display = 'block';
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    const plyData = parsePLY(text);
-
-                    if (plyData.vertices.length === 0) {
-                        alert('Error: No vertices found in PLY file');
-                        document.getElementById('loadingMessage').style.display = 'none';
-                        return;
-                    }
-
-                    const geometry = new THREE.BufferGeometry();
-                    geometry.setAttribute('position', new THREE.Float32BufferAttribute(plyData.vertices, 3));
-                    geometry.setAttribute('color', new THREE.Float32BufferAttribute(plyData.colors, 3));
-                    
-                    if (plyData.faces.length > 0) {
-                        geometry.setIndex(plyData.faces);
-                    }
-                    
-                    geometry.computeVertexNormals();
-
-                    // Center and scale geometry
-                    geometry.computeBoundingBox();
-                    const center = new THREE.Vector3();
-                    geometry.boundingBox.getCenter(center);
-                    geometry.translate(-center.x, -center.y, -center.z);
-
-                    const size = new THREE.Vector3();
-                    geometry.boundingBox.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const scale = 3 / maxDim;
-                    geometry.scale(scale, scale, scale);
-
-                    const material = new THREE.MeshPhongMaterial({ 
-                        vertexColors: true,
-                        flatShading: false,
-                        side: THREE.DoubleSide
-                    });
-
-                    if (mesh) {
-                        scene.remove(mesh);
-                    }
-
-                    mesh = new THREE.Mesh(geometry, material);
-                    scene.add(mesh);
-
-                    // Update stats
-                    const statsDiv = document.getElementById('meshStats');
-                    statsDiv.innerHTML = `Vertices: ${plyData.vertices.length / 3} | Faces: ${plyData.faces.length / 3}`;
-                    statsDiv.style.display = 'block';
-
-                    document.getElementById('loadingMessage').style.display = 'none';
-                    console.log('Mesh loaded successfully!');
-                } catch (error) {
-                    console.error('Error loading PLY:', error);
-                    alert('Error loading PLY file: ' + error.message);
-                    document.getElementById('loadingMessage').style.display = 'none';
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function resetCamera() {
-            camera.position.set(0, 0, 5);
-            rotation = { x: 0, y: 0 };
-            panOffset = { x: 0, y: 0 };
-            if (mesh) {
-                mesh.rotation.set(0, 0, 0);
-            }
-        }
-
-        function toggleWireframe() {
-            if (mesh) {
-                wireframeMode = !wireframeMode;
-                mesh.material.wireframe = wireframeMode;
-            }
-        }
-
-        function toggleRotation() {
-            autoRotate = !autoRotate;
-        }
-
-        // File input handlers
-        document.getElementById('videoInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                const videoPlayer = document.getElementById('videoPlayer');
-                const videoSource = document.getElementById('videoSource');
-                videoSource.src = url;
-                videoPlayer.load();
-            }
-        });
-
-        document.getElementById('plyInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                loadPLY(file);
-            }
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            const canvas = document.getElementById('plyCanvas');
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-        });
-
-        // Initialize scene on load
-        window.addEventListener('load', initScene);
-    </script>
 </body>
 
 </html>
